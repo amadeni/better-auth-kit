@@ -167,13 +167,27 @@ export default authConfig;
 ### `src/middleware.ts`
 
 ```ts
-import {
-  AUTH_MIDDLEWARE_MATCHER,
-  createAuthNextMiddleware,
-} from '@amadeni/better-auth-kit/next';
+import { createAuthNextMiddleware } from '@amadeni/better-auth-kit/next';
 
 export default createAuthNextMiddleware();
-export const config = { matcher: AUTH_MIDDLEWARE_MATCHER };
+
+// Next.js statically parses `config` at build time — the matcher MUST be an
+// inline literal here; importing AUTH_MIDDLEWARE_MATCHER breaks `next build`.
+export const config = {
+  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+};
+```
+
+Keep the literal in sync with the kit via a drift-guard test:
+
+```ts
+// src/middleware.test.ts
+import { AUTH_MIDDLEWARE_MATCHER } from '@amadeni/better-auth-kit/next';
+import { config } from './middleware';
+
+test('middleware matcher matches the kit constant', () => {
+  expect(config.matcher).toEqual(AUTH_MIDDLEWARE_MATCHER);
+});
 ```
 
 ### `src/app/api/auth/[...all]/route.ts`

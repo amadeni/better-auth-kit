@@ -37,9 +37,14 @@ export type AuthNextMiddlewareOptions = Omit<
  *
  * ```ts
  * // src/middleware.ts
- * import { AUTH_MIDDLEWARE_MATCHER, createAuthNextMiddleware } from '@amadeni/better-auth-kit/next';
+ * import { createAuthNextMiddleware } from '@amadeni/better-auth-kit/next';
  * export default createAuthNextMiddleware();
- * export const config = { matcher: AUTH_MIDDLEWARE_MATCHER };
+ * // Inline literal required: Next.js statically parses `config` at build
+ * // time, so importing AUTH_MIDDLEWARE_MATCHER here breaks `next build`.
+ * // Add a drift-guard test asserting it equals AUTH_MIDDLEWARE_MATCHER.
+ * export const config = {
+ *   matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+ * };
  * ```
  */
 export function createAuthNextMiddleware(
