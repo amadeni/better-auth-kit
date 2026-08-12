@@ -18,6 +18,7 @@ export {
   createAuthRouteHandlers,
   unwrapRedirectEnvelope,
   type AuthProxyHandler,
+  type RedirectEnvelopeOptions,
 } from './routeHandlers.js';
 export { createAuthServer, type AuthServerConfig } from './authServer.js';
 

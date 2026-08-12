@@ -139,7 +139,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
         isEligible: async email =>
           'runQuery' in ctx
             ? ctx.runQuery(internal.auth.checkLoginEligibility, { email })
-            : { ok: true },
+            : // Fail closed: a context that cannot run the check must not
+              // let the request through.
+              { ok: false, error: AUTH_ERROR_CODES.SIGN_IN_LINK_UNAVAILABLE },
       }),
     },
   });
@@ -229,7 +231,14 @@ supply-chain target. Deliberate posture:
   sets `storeToken: 'hashed'` (a database leak must not leak live sign-in
   tokens) and `rateLimit: { storage: 'database' }` (in-memory rate limiting
   never fires on the stateless Convex runtime). The magic link and convex
-  plugins are always wired; `extraPlugins` can only add, not replace.
+  plugins are always wired and cannot be replaced through `extraPlugins`:
+  Better Auth merges plugin endpoints last-wins (and only logs endpoint
+  conflicts), so the kit orders its plugins last and additionally throws if
+  an extra plugin carries the reserved id `magic-link` or `convex`.
+- **No open redirect through the envelope unwrap.** `unwrapRedirectEnvelope`
+  only issues redirects to the request's own origin (or origins explicitly
+  allow-listed via `allowedRedirectOrigins`); cross-origin envelopes pass
+  through unchanged.
 - **Scanner-proof links.** Emails link to the `/login?token=…` interstitial;
   only an explicit user click consumes the token at the verify endpoint.
 - **Fail-closed verify re-check.** `createEligibilityHook` re-validates

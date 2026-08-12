@@ -87,6 +87,42 @@ describe('unwrapRedirectEnvelope', () => {
     const result = await unwrapRedirectEnvelope(navRequest(), response);
     expect(result).toBe(response);
   });
+
+  it('refuses cross-origin redirect targets and passes the envelope through', async () => {
+    // Defense-in-depth against open redirects: even a well-formed envelope
+    // must not send the browser off-origin unless explicitly allow-listed.
+    const crossOrigin = jsonResponse(
+      JSON.stringify({ redirect: true, url: 'https://evil.example.net/p' }),
+    );
+    const result = await unwrapRedirectEnvelope(navRequest(), crossOrigin);
+    expect(result).toBe(crossOrigin);
+    expect(result.status).toBe(200);
+    await expect(result.json()).resolves.toMatchObject({ redirect: true });
+  });
+
+  it('refuses protocol-relative and scheme tricks that resolve off-origin', async () => {
+    for (const url of [
+      '//evil.example.net/p',
+      'https://app.example.com.evil.example.net/p',
+    ]) {
+      const response = jsonResponse(JSON.stringify({ redirect: true, url }));
+      const result = await unwrapRedirectEnvelope(navRequest(), response);
+      expect(result).toBe(response);
+    }
+  });
+
+  it('allows explicitly allow-listed external origins (e.g. an OAuth client)', async () => {
+    const response = jsonResponse(
+      JSON.stringify({ redirect: true, url: 'https://client.example.org/cb' }),
+    );
+    const result = await unwrapRedirectEnvelope(navRequest(), response, {
+      allowedRedirectOrigins: ['https://client.example.org'],
+    });
+    expect(result.status).toBe(302);
+    expect(result.headers.get('location')).toBe(
+      'https://client.example.org/cb',
+    );
+  });
 });
 
 describe('createAuthRouteHandlers', () => {

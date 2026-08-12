@@ -8,8 +8,11 @@
     "moduleResolution": "nodenext",
     "lib": ["ES2022"],
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    // No source/declaration maps: the tarball ships dist only, so maps
+    // would reference sources that are not there (dead references, larger
+    // artifact, and misleading debugger jumps).
+    "declarationMap": false,
+    "sourceMap": false,
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,

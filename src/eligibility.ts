@@ -82,8 +82,10 @@ export type ResolveEmailForVerify = (args: {
  * adapter, and read the email from its JSON value.
  *
  * Fails closed: malformed rows resolve to `''` (which no eligibility check
- * accepts); unknown tokens resolve to `null` (skip — the plugin rejects
- * those itself, and we must not leak anything about them).
+ * accepts), and a *failing* lookup (adapter/infra error) propagates and
+ * denies the request — an outage must never skip the re-check. Only a
+ * definitively missing row resolves to `null` (skip — the plugin then
+ * rejects the unknown token itself, and we must not leak anything about it).
  */
 export const resolveVerifyEmailFromHashedToken: ResolveEmailForVerify = async ({
   token,
@@ -91,7 +93,7 @@ export const resolveVerifyEmailFromHashedToken: ResolveEmailForVerify = async ({
 }) => {
   const verification = await findVerificationValue(
     await hashVerificationToken(token),
-  ).catch(() => null);
+  );
   if (!verification) return null;
   try {
     const parsed: unknown = JSON.parse(verification.value);

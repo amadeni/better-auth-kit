@@ -162,16 +162,17 @@ describe('resolveEligibilityEmail', () => {
     expect(email).toBe('');
   });
 
-  it('skips when the adapter lookup throws — the verify endpoint fails on its own then', async () => {
+  it('fails closed when the adapter lookup throws — an infra error must not skip the re-check', async () => {
     const adapter = {
       findVerificationValue: vi.fn(async () => {
         throw new Error('adapter unavailable');
       }),
     };
-    const email = await resolveEligibilityEmail(
-      hookCtx({ path: '/magic-link/verify', query: { token: 'x' } }, adapter),
-    );
-    expect(email).toBeNull();
+    await expect(
+      resolveEligibilityEmail(
+        hookCtx({ path: '/magic-link/verify', query: { token: 'x' } }, adapter),
+      ),
+    ).rejects.toThrow('adapter unavailable');
   });
 
   it('ignores unrelated auth endpoints', async () => {
@@ -238,6 +239,23 @@ describe('createEligibilityHandler', () => {
       ),
     ).rejects.toBeInstanceOf(APIError);
     expect(isEligible).toHaveBeenCalledWith('deleted@example.com');
+  });
+
+  it('denies the verify request when the token lookup fails (fail closed)', async () => {
+    const adapter = {
+      findVerificationValue: vi.fn(async () => {
+        throw new Error('adapter unavailable');
+      }),
+    };
+    const isEligible = vi.fn(async () => ({ ok: true }) as const);
+    const handler = createEligibilityHandler({ isEligible });
+
+    await expect(
+      handler(
+        hookCtx({ path: '/magic-link/verify', query: { token: 'x' } }, adapter),
+      ),
+    ).rejects.toThrow('adapter unavailable');
+    expect(isEligible).not.toHaveBeenCalled();
   });
 
   it('does not call isEligible for unrelated endpoints', async () => {

@@ -35,9 +35,11 @@ export type AmadeniAuthOptionsConfig<
   /** Magic link lifetime; defaults to 24 hours. */
   magicLinkTtlSeconds?: number;
   /**
-   * Additional Better Auth plugins (OAuth provider, org plugin, …). They are
-   * inserted between the kit's magic link and convex plugins and cannot
-   * replace either of them.
+   * Additional Better Auth plugins (OAuth provider, org plugin, …). They
+   * are inserted BEFORE the kit's magic link and convex plugins (Better
+   * Auth merges endpoints last-wins, so the hardened plugins always win)
+   * and must not carry the reserved ids `magic-link` or `convex` — the
+   * factory throws otherwise.
    */
   extraPlugins?: TExtra;
 };
@@ -51,7 +53,10 @@ export type AmadeniAuthOptionsConfig<
  * - `rateLimit: { storage: 'database' }` — the Convex runtime is stateless
  *   per request, so Better Auth's default in-memory rate limiting would
  *   never see a second attempt.
- * - magic link and convex plugins are always wired.
+ * - magic link and convex plugins are always wired, and `extraPlugins`
+ *   cannot replace them: Better Auth merges plugin endpoints last-wins and
+ *   only *logs* endpoint conflicts, so the kit's plugins are ordered last
+ *   AND a reserved-id collision throws.
  *
  * This is a function (and reads no environment variables at module scope) so
  * it stays usable inside the Convex component directory, where env vars are
@@ -69,14 +74,30 @@ export type AmadeniAuthOptions<TExtra extends ExtraPlugins = never[]> = {
   )[];
 };
 
+/** Plugin ids owned by the kit; consumers must not supply their own. */
+const RESERVED_PLUGIN_IDS: readonly string[] = ['magic-link', 'convex'];
+
 export const createAmadeniAuthOptions = <TExtra extends ExtraPlugins = never[]>(
   config: AmadeniAuthOptionsConfig<TExtra> = {},
-): AmadeniAuthOptions<TExtra> =>
+): AmadeniAuthOptions<TExtra> => {
+  const extraPlugins = (config.extraPlugins ?? []) as TExtra;
+  for (const plugin of extraPlugins) {
+    if (RESERVED_PLUGIN_IDS.includes(plugin.id)) {
+      throw new Error(
+        `createAmadeniAuthOptions: extraPlugins must not contain a plugin ` +
+          `with the reserved id "${plugin.id}" — the kit wires the hardened ` +
+          `magic-link and convex plugins itself and they cannot be ` +
+          `replaced. Configure them through the factory options ` +
+          `(sendMagicLink, magicLinkTtlSeconds, authConfig, …) instead.`,
+      );
+    }
+  }
+
   // Deliberately not asserted to `BetterAuthOptions` — the plugin types must
   // survive so `auth.api` exposes the plugin endpoints. For schema
   // generation, assert the result yourself:
   // `createAmadeniAuthOptions() as BetterAuthOptions`.
-  ({
+  return {
     // Placeholder adapter for schema generation; the runtime instance
     // replaces `database` with the real ctx-bound component adapter.
     database: convexAdapter({} as never, {} as never),
@@ -84,17 +105,33 @@ export const createAmadeniAuthOptions = <TExtra extends ExtraPlugins = never[]>(
     ...(config.appName ? { appName: config.appName } : {}),
     session: { expiresIn: config.sessionTtlSeconds ?? SESSION_TTL_SECONDS },
     rateLimit: { storage: 'database' as const },
+    // Kit plugins deliberately LAST: Better Auth merges plugin endpoints
+    // last-wins and `checkEndpointConflicts` only logs, so this ordering
+    // (plus the reserved-id check above) guarantees the hardened
+    // magic-link/convex endpoints always win over anything in extraPlugins.
     plugins: [
+      ...extraPlugins,
       magicLink({
         expiresIn: config.magicLinkTtlSeconds ?? MAGIC_LINK_TTL_SECONDS,
         storeToken: 'hashed',
-        sendMagicLink: config.sendMagicLink ?? (async () => {}),
+        sendMagicLink:
+          config.sendMagicLink ??
+          (async () => {
+            // Fail loudly at send time instead of silently dropping the
+            // email. Schema generation and the component adapter never
+            // send, so they can keep calling the factory without arguments.
+            throw new Error(
+              'createAmadeniAuthOptions: sendMagicLink is not configured. ' +
+                'Pass sendMagicLink (e.g. createResendMagicLinkSender(...)) ' +
+                'in the runtime options.',
+            );
+          }),
       }),
-      ...((config.extraPlugins ?? []) as TExtra),
       convex({
         authConfig: config.authConfig ?? {
           providers: [{ applicationID: 'convex', domain: '' }],
         },
       }),
     ],
-  });
+  };
+};

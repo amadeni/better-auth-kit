@@ -55,6 +55,43 @@ describe('renderMagicLinkEmail', () => {
     expect(withLogo.html).toContain('https://cdn.example.com/logo.png');
   });
 
+  it('falls back to the default color for anything that is not a hex color', () => {
+    for (const invalid of [
+      'red;} body { background: url(x) } ',
+      '#0F766E" onmouseover="alert(1)',
+      'expression(alert(1))',
+      'url(javascript:alert(1))',
+      '#12345',
+      '',
+    ]) {
+      const { html } = renderMagicLinkEmail({
+        brand: { ...brand, color: invalid },
+        url,
+      });
+      expect(html).toContain(DEFAULT_BRAND_COLOR);
+      if (invalid) expect(html).not.toContain(invalid);
+    }
+  });
+
+  it('accepts short and alpha hex colors', () => {
+    for (const valid of ['#fff', '#ffff', '#001C46', '#001C46FF']) {
+      const { html } = renderMagicLinkEmail({
+        brand: { ...brand, color: valid },
+        url,
+      });
+      expect(html).toContain(valid);
+    }
+  });
+
+  it('escapes single quotes in brand values', () => {
+    const { html } = renderMagicLinkEmail({
+      brand: { ...brand, productName: "O'Brien & Co" },
+      url,
+    });
+    expect(html).toContain('O&#39;Brien &amp; Co');
+    expect(html).not.toContain("O'Brien");
+  });
+
   it('escapes HTML in the product name', () => {
     const { html } = renderMagicLinkEmail({
       brand: { ...brand, productName: 'App <&> "Co"' },

@@ -11,12 +11,28 @@ export type MagicLinkBrand = {
 
 export const DEFAULT_BRAND_COLOR = '#0F766E';
 
+/** #rgb, #rgba, #rrggbb, or #rrggbbaa. */
+const HEX_COLOR_PATTERN =
+  /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+/**
+ * Only hex colors are accepted for the button; anything else falls back to
+ * the default. This keeps `brand.color` from ever injecting markup into the
+ * style/bgcolor attribute contexts (where entity escaping alone would not
+ * be a sufficient defense).
+ */
+function safeBrandColor(color: string | undefined) {
+  if (color && HEX_COLOR_PATTERN.test(color)) return color;
+  return DEFAULT_BRAND_COLOR;
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**
@@ -32,7 +48,7 @@ export function renderMagicLinkEmail(params: {
   const { host } = new URL(url);
   const escapedHost = escapeHtml(host).replace(/\./g, '&#8203;.');
   const productName = escapeHtml(brand.productName);
-  const buttonColor = brand.color ?? DEFAULT_BRAND_COLOR;
+  const buttonColor = safeBrandColor(brand.color);
   const href = escapeHtml(url);
 
   const color = {
