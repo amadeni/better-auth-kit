@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    // Deviation from convex-lib (commonjs/node10): better-auth and
+    // @convex-dev/better-auth ship ESM-only with an exports map, so this
+    // package emits ESM and resolves via nodenext.
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2022"],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.spec.ts"]
+}
