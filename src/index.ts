@@ -22,7 +22,9 @@ export {
 export {
   DEFAULT_BRAND_COLOR,
   renderMagicLinkEmail,
+  resolveBrandFrom,
   type MagicLinkBrand,
+  type MagicLinkLocale,
 } from './emailTemplate.js';
 export {
   AUTH_ERROR_CODES,
