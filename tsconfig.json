@@ -6,7 +6,9 @@
     "target": "ES2022",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "lib": ["ES2022"],
+    // DOM: the /client entry wires visibilitychange/online wake listeners
+    // (guarded by typeof checks, so server entries stay import-safe).
+    "lib": ["ES2022", "DOM"],
     "declaration": true,
     // No source/declaration maps: the tarball ships dist only, so maps
     // would reference sources that are not there (dead references, larger

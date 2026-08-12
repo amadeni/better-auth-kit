@@ -45,6 +45,22 @@ export function createAmadeniAuthClient<TExtra extends ClientPlugins = never[]>(
 }
 
 export {
+  createConvexAuthHooks,
+  useDelayedAuthPending,
+  type ConvexAuthHookResult,
+  type ConvexAuthHooks,
+} from './convexAuthHooks.js';
+export {
+  createBetterAuthTokenFetcher,
+  createConvexTokenManager,
+  decodeJwtExpiryMs,
+  type ConvexTokenAuthClient,
+  type ConvexTokenManager,
+  type ConvexTokenManagerConfig,
+  type ConvexTokenSnapshot,
+  type FetchAccessTokenArgs,
+} from './convexTokenManager.js';
+export {
   AUTH_ERROR_CODES,
   type AuthErrorCode,
   type AuthErrorCodeValue,

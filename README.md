@@ -282,6 +282,54 @@ Consume the token via `devAuth.buildVerifyUrl({ token, origin })` — a
 `@amadeni/dev-contract` packages exactly this flow as a CLI with a
 verified-login readiness gate.
 
+## Resilient Convex token refresh (`createConvexTokenManager`)
+
+After laptop standby or a background tab the Convex JWT expires; on wake
+the Convex reconnect races the token refresh, `getSession`-style requests
+can hang on a half-dead network, and the Convex client never retries once
+a token fetch returned `null` — users see error pages or a stuck
+"renewing sign-in" screen until they reload. The `/client` token manager
+fixes this fleet-wide:
+
+- **Proactive refresh** on `visibilitychange` → visible and `online`
+  events plus a background interval — the token is fresh again before
+  Convex reconnects.
+- **Stale-while-revalidate + backoff**: a not-yet-expired token keeps
+  being served while refreshes retry (1s/2s/5s/15s, each attempt capped
+  by a timeout). Unauthenticated is reported only once the token expired
+  AND retries are exhausted — or the backend answers 401/403.
+- **Automatic recovery**: after Convex gave up (saw `null`), the next
+  successful refresh bumps an auth epoch, which rotates the
+  `fetchAccessToken` identity and makes `ConvexProviderWithAuth` call
+  `client.setAuth` again — the automated version of "reload fixes it".
+
+```tsx
+// src/lib/convex-token.ts
+import {
+  createBetterAuthTokenFetcher,
+  createConvexAuthHooks,
+  createConvexTokenManager,
+} from '@amadeni/better-auth-kit/client';
+import { authClient } from './auth-client';
+
+export const tokenManager = createConvexTokenManager({
+  fetchToken: createBetterAuthTokenFetcher(authClient),
+});
+export const { useAuth, useAuthToken } = createConvexAuthHooks(tokenManager);
+
+// src/app/ConvexClientProvider.tsx
+<ConvexProviderWithAuth client={convex} useAuth={useAuth}>
+
+// Imperative consumers (HTTP uploads etc.):
+const token = await tokenManager.getToken({ forceRefresh: gotA401 });
+
+// Intermediate states become visible only after a few seconds:
+const showPending = useDelayedAuthPending(authLost, 3_000);
+```
+
+Seed the SSR token with `tokenManager.prime(initialToken)`; call
+`tokenManager.clear()` on explicit sign-out.
+
 ## Security
 
 This package is the auth base of the whole fleet, which makes it a
