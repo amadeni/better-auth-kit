@@ -1,4 +1,8 @@
-import { APIError, createAuthMiddleware } from 'better-auth/api';
+import {
+  APIError,
+  createAuthMiddleware,
+  type AuthMiddleware,
+} from 'better-auth/api';
 import { AUTH_ERROR_CODES } from './errorCodes.js';
 import { hashVerificationToken } from './hashToken.js';
 
@@ -175,7 +179,13 @@ export function createEligibilityHandler(config: EligibilityHookConfig) {
  * blocks the login). Throws `APIError('BAD_REQUEST', { message: <code> })`
  * with codes from `AUTH_ERROR_CODES`.
  */
-export function createEligibilityHook(config: EligibilityHookConfig) {
+// The explicit return type keeps the emitted declaration portable: without
+// it, tsc infers a type that references better-call (a transitive dependency
+// of better-auth) and fails the build with TS2742 in isolated installs
+// (e.g. pnpm's git-dependency prepare step).
+export function createEligibilityHook(
+  config: EligibilityHookConfig,
+): AuthMiddleware {
   const handler = createEligibilityHandler(config);
   return createAuthMiddleware(async hookCtx => {
     await handler(hookCtx as unknown as EligibilityHookContext);
