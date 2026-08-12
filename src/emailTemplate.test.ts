@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_BRAND_COLOR, renderMagicLinkEmail } from './emailTemplate.js';
+import {
+  DEFAULT_BRAND_COLOR,
+  renderMagicLinkEmail,
+  resolveBrandFrom,
+} from './emailTemplate.js';
 
 const brand = {
   productName: 'Example App',
@@ -105,5 +109,40 @@ describe('renderMagicLinkEmail', () => {
     const { text } = renderMagicLinkEmail({ brand, url });
     expect(text).toContain(url);
     expect(text).toContain('Example App');
+  });
+});
+
+describe('locale and from defaults', () => {
+  it('renders English copy with locale "en"', () => {
+    const { html, text } = renderMagicLinkEmail({
+      brand: { productName: 'Example Suite', locale: 'en' },
+      url: 'https://app.example.com/login?token=abc',
+    });
+    expect(html).toContain('Sign in to Example Suite');
+    expect(html).toContain('Sign in now');
+    expect(html).toContain('you can safely ignore it');
+    expect(text).toContain('Sign in to Example Suite (app.example.com)');
+    expect(text).not.toContain('Anmelden');
+  });
+
+  it('defaults to German copy without locale', () => {
+    const { html } = renderMagicLinkEmail({
+      brand: { productName: 'Example App' },
+      url: 'https://app.example.com/login?token=abc',
+    });
+    expect(html).toContain('Anmelden bei Example App');
+    expect(html).toContain('Jetzt anmelden');
+  });
+
+  it('derives the fleet-standard From header from the product name', () => {
+    expect(resolveBrandFrom({ productName: 'Example App' })).toBe(
+      'Example App <noreply@mail.amadeni.ai>',
+    );
+    expect(
+      resolveBrandFrom({
+        productName: 'Example App',
+        from: 'Custom <custom@example.com>',
+      }),
+    ).toBe('Custom <custom@example.com>');
   });
 });

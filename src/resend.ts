@@ -1,5 +1,9 @@
 import type { SendMagicLink } from './authOptions.js';
-import { renderMagicLinkEmail, type MagicLinkBrand } from './emailTemplate.js';
+import {
+  renderMagicLinkEmail,
+  resolveBrandFrom,
+  type MagicLinkBrand,
+} from './emailTemplate.js';
 import { buildInterstitialLoginUrl } from './urls.js';
 
 /**
@@ -61,7 +65,7 @@ export function createResendMagicLinkSender(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: config.brand.from,
+        from: resolveBrandFrom(config.brand),
         to: email,
         // The timestamp keeps threads from collapsing repeated login mails.
         subject: `${config.brand.productName} Login Link (${host}) - ${new Date().toISOString()}`,
