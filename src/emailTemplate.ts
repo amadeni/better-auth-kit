@@ -18,6 +18,9 @@ export type MagicLinkBrand = {
 
 export const DEFAULT_BRAND_COLOR = '#5b21b6';
 
+/** Matches the kit's default magic link TTL (createAmadeniAuthOptions). */
+export const DEFAULT_MAGIC_LINK_TTL_HOURS = 24;
+
 /** #rgb, #rgba, #rrggbb, or #rrggbbaa. */
 const HEX_COLOR_PATTERN =
   /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
@@ -47,55 +50,68 @@ export function resolveBrandFrom(brand: MagicLinkBrand) {
   return brand.from ?? `${brand.productName} <noreply@mail.amadeni.ai>`;
 }
 
+// German copy is deliberately pronoun-free (neither "Sie" nor "Du") so no
+// project has to pick a form of address for its login mail.
 const COPY: Record<
   MagicLinkLocale,
   {
     title: (productName: string) => string;
     intro: string;
     button: string;
-    ignore: string;
+    validity: (escapedHost: string, ttlHours: number) => string;
     footer: (productName: string) => string;
     textHeading: (productName: string, host: string) => string;
-    textIgnore: string;
+    textValidity: (host: string, ttlHours: number) => string;
+    textFooter: string;
   }
 > = {
   de: {
     title: productName => `Anmelden bei ${productName}`,
-    intro: 'Mit dem Button unten schließen Sie Ihre Anmeldung ab:',
+    intro: 'Ein Klick genügt, um die Anmeldung abzuschließen:',
     button: 'Jetzt anmelden',
-    ignore:
-      'Wenn Sie diese E-Mail nicht angefordert haben, können Sie sie ignorieren.',
+    validity: (escapedHost, ttlHours) =>
+      `Gilt für <strong>${escapedHost}</strong> &middot; ${ttlHours} Stunden gültig`,
     footer: productName =>
-      `Diese E-Mail wurde automatisch von ${productName} gesendet.`,
+      `Diese E-Mail wurde automatisch von ${productName} gesendet. Falls die Anmeldung nicht angefordert wurde, kann diese Nachricht einfach ignoriert werden.`,
     textHeading: (productName, host) => `Anmelden bei ${productName} (${host})`,
-    textIgnore:
-      'Wenn Sie diese E-Mail nicht angefordert haben, koennen Sie sie ignorieren.',
+    textValidity: (host, ttlHours) =>
+      `Gilt für ${host} - ${ttlHours} Stunden gültig`,
+    textFooter:
+      'Falls die Anmeldung nicht angefordert wurde, kann diese Nachricht einfach ignoriert werden.',
   },
   en: {
     title: productName => `Sign in to ${productName}`,
     intro: 'Use the button below to complete your sign-in:',
     button: 'Sign in now',
-    ignore: 'If you did not request this email, you can safely ignore it.',
+    validity: (escapedHost, ttlHours) =>
+      `Valid for <strong>${escapedHost}</strong> &middot; expires in ${ttlHours} hours`,
     footer: productName =>
-      `This email was sent automatically by ${productName}.`,
+      `This email was sent automatically by ${productName}. If this sign-in was not requested, this message can safely be ignored.`,
     textHeading: (productName, host) => `Sign in to ${productName} (${host})`,
-    textIgnore: 'If you did not request this email, you can safely ignore it.',
+    textValidity: (host, ttlHours) =>
+      `Valid for ${host} - expires in ${ttlHours} hours`,
+    textFooter:
+      'If this sign-in was not requested, this message can safely be ignored.',
   },
 };
 
 /**
  * Renders the branded magic link email as the fleet-standard card layout
- * (eyebrow with the product name, title, button, muted note box, footer
- * below the card — mirrors the Amadeni Hub customer notification design).
- * German copy by default, English via `brand.locale`. Pure — snapshot
- * tested. The host is rendered with zero-width spaces after each dot so mail
- * clients do not auto-link it and users can still read where the link goes.
+ * (eyebrow "<productName> Login", title, button, one muted validity line,
+ * ignore-hint in the footer below the card — mirrors the Amadeni Hub
+ * customer notification design). German copy by default (pronoun-free),
+ * English via `brand.locale`. Pure — snapshot tested. The host is rendered
+ * with zero-width spaces after each dot so mail clients do not auto-link it
+ * and users can still read where the link goes.
  */
 export function renderMagicLinkEmail(params: {
   brand: MagicLinkBrand;
   url: string;
+  /** Shown in the validity line; defaults to the kit's magic link TTL. */
+  ttlHours?: number;
 }) {
   const { brand, url } = params;
+  const ttlHours = params.ttlHours ?? DEFAULT_MAGIC_LINK_TTL_HOURS;
   const copy = COPY[brand.locale ?? 'de'];
   const { host } = new URL(url);
   const escapedHost = escapeHtml(host).replace(/\./g, '&#8203;.');
@@ -109,8 +125,6 @@ export function renderMagicLinkEmail(params: {
     heading: '#1F2937',
     text: '#374151',
     muted: '#6B7280',
-    noteBackground: '#F9FAFB',
-    noteBorder: '#E5E7EB',
     button: brandColor,
     buttonText: '#FFFFFF',
   };
@@ -134,7 +148,7 @@ export function renderMagicLinkEmail(params: {
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background: ${color.card}; max-width: 600px; margin: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);">${logoRow}
           <tr>
             <td style="padding: 32px 32px 8px 32px; ${font} font-size: 13px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: ${color.button};">
-              ${productName}
+              ${productName} Login
             </td>
           </tr>
           <tr>
@@ -145,7 +159,7 @@ export function renderMagicLinkEmail(params: {
           <tr>
             <td style="padding: 0 32px 8px 32px;">
               <p style="${font} font-size: 15px; line-height: 1.6; color: ${color.text}; margin: 0 0 16px 0;">${copy.intro}</p>
-              <table border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 24px 0;">
+              <table border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 20px 0;">
                 <tr>
                   <td align="center" style="border-radius: 8px;" bgcolor="${color.button}">
                     <a href="${href}" target="_blank" style="${font} font-size: 15px; font-weight: bold; color: ${color.buttonText}; text-decoration: none; border-radius: 8px; padding: 12px 24px; display: inline-block;">
@@ -154,13 +168,9 @@ export function renderMagicLinkEmail(params: {
                   </td>
                 </tr>
               </table>
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 0 0 24px 0;">
-                <tr>
-                  <td style="${font} font-size: 13px; line-height: 1.6; color: ${color.muted}; background: ${color.noteBackground}; border: 1px solid ${color.noteBorder}; border-radius: 8px; padding: 12px 16px;">
-                    <strong>${escapedHost}</strong><br />${copy.ignore}
-                  </td>
-                </tr>
-              </table>
+              <p style="${font} font-size: 13px; line-height: 1.6; color: ${color.muted}; margin: 0 0 24px 0;">
+                ${copy.validity(escapedHost, ttlHours)}
+              </p>
             </td>
           </tr>
         </table>
@@ -177,7 +187,7 @@ export function renderMagicLinkEmail(params: {
 </body>
 `;
 
-  const text = `${copy.textHeading(brand.productName, host)}\n${url}\n\n${copy.textIgnore}`;
+  const text = `${copy.textHeading(brand.productName, host)}\n${url}\n\n${copy.textValidity(host, ttlHours)}\n${copy.textFooter}`;
 
   return { html, text, host };
 }

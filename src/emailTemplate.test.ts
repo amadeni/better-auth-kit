@@ -120,7 +120,7 @@ describe('locale and from defaults', () => {
     });
     expect(html).toContain('Sign in to Example Suite');
     expect(html).toContain('Sign in now');
-    expect(html).toContain('you can safely ignore it');
+    expect(html).toContain('can safely be ignored');
     expect(text).toContain('Sign in to Example Suite (app.example.com)');
     expect(text).not.toContain('Anmelden');
   });

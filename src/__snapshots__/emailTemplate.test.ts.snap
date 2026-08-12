@@ -9,7 +9,7 @@ exports[`renderMagicLinkEmail > renders the branded HTML email (snapshot) 1`] = 
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #FFFFFF; max-width: 600px; margin: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);">
           <tr>
             <td style="padding: 32px 32px 8px 32px; font-family: Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; color: #5b21b6;">
-              Example App
+              Example App Login
             </td>
           </tr>
           <tr>
@@ -19,8 +19,8 @@ exports[`renderMagicLinkEmail > renders the branded HTML email (snapshot) 1`] = 
           </tr>
           <tr>
             <td style="padding: 0 32px 8px 32px;">
-              <p style="font-family: Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #374151; margin: 0 0 16px 0;">Mit dem Button unten schließen Sie Ihre Anmeldung ab:</p>
-              <table border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 24px 0;">
+              <p style="font-family: Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #374151; margin: 0 0 16px 0;">Ein Klick genügt, um die Anmeldung abzuschließen:</p>
+              <table border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 20px 0;">
                 <tr>
                   <td align="center" style="border-radius: 8px;" bgcolor="#5b21b6">
                     <a href="https://app.example.com/login?token=test-token" target="_blank" style="font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: bold; color: #FFFFFF; text-decoration: none; border-radius: 8px; padding: 12px 24px; display: inline-block;">
@@ -29,20 +29,16 @@ exports[`renderMagicLinkEmail > renders the branded HTML email (snapshot) 1`] = 
                   </td>
                 </tr>
               </table>
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 0 0 24px 0;">
-                <tr>
-                  <td style="font-family: Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #6B7280; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 12px 16px;">
-                    <strong>app&#8203;.example&#8203;.com</strong><br />Wenn Sie diese E-Mail nicht angefordert haben, können Sie sie ignorieren.
-                  </td>
-                </tr>
-              </table>
+              <p style="font-family: Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #6B7280; margin: 0 0 24px 0;">
+                Gilt für <strong>app&#8203;.example&#8203;.com</strong> &middot; 24 Stunden gültig
+              </p>
             </td>
           </tr>
         </table>
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto;">
           <tr>
             <td align="center" style="padding: 16px 32px; font-family: Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #6B7280;">
-              Diese E-Mail wurde automatisch von Example App gesendet.
+              Diese E-Mail wurde automatisch von Example App gesendet. Falls die Anmeldung nicht angefordert wurde, kann diese Nachricht einfach ignoriert werden.
             </td>
           </tr>
         </table>
@@ -57,5 +53,6 @@ exports[`renderMagicLinkEmail > renders the plain text fallback (snapshot) 1`] =
 "Anmelden bei Example App (app.example.com)
 https://app.example.com/login?token=test-token
 
-Wenn Sie diese E-Mail nicht angefordert haben, koennen Sie sie ignorieren."
+Gilt für app.example.com - 24 Stunden gültig
+Falls die Anmeldung nicht angefordert wurde, kann diese Nachricht einfach ignoriert werden."
 `;

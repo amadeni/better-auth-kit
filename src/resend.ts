@@ -18,6 +18,8 @@ export function resolveResendApiKey(
 
 export type ResendMagicLinkSenderConfig = {
   brand: MagicLinkBrand;
+  /** Shown in the email's validity line; defaults to the kit's 24h TTL. */
+  ttlHours?: number;
   /**
    * Builds the URL placed in the email. Defaults to the interstitial
    * `/login?token=…` page on the same origin as Better Auth's verify URL,
@@ -55,6 +57,7 @@ export function createResendMagicLinkSender(
     const { html, text, host } = renderMagicLinkEmail({
       brand: config.brand,
       url: loginUrl,
+      ttlHours: config.ttlHours,
     });
 
     const fetchImpl = config.fetchImpl ?? fetch;
