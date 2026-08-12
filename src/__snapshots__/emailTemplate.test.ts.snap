@@ -1,0 +1,47 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderMagicLinkEmail > renders the branded HTML email (snapshot) 1`] = `
+"
+<body style="background: #F6F8FC; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; word-spacing: normal;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #F6F8FC;">
+    <tr>
+      <td align="center" style="padding: 20px;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #FFFFFF; max-width: 600px; margin: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);">
+          <tr>
+            <td align="center" style="padding: 32px 24px; font-size: 24px; font-family: Helvetica, Arial, sans-serif; color: #1F2937; line-height: 1.4;">
+              Anmelden bei Example App<br/>
+              (<strong>app&#8203;.example&#8203;.com</strong>)
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 0 24px 32px 24px;">
+              <table border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="center" style="border-radius: 8px;" bgcolor="#0F766E">
+                    <a href="https://app.example.com/login?token=test-token" target="_blank" style="font-size: 18px; font-family: Helvetica, Arial, sans-serif; color: #FFFFFF; text-decoration: none; border-radius: 8px; padding: 12px 24px; border: 1px solid #0F766E; display: inline-block; font-weight: bold;">
+                      Jetzt anmelden
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 0 24px 24px 24px; font-size: 14px; line-height: 1.5; font-family: Helvetica, Arial, sans-serif; color: #6B7280;">
+              Wenn Sie diese E-Mail nicht angefordert haben, k&ouml;nnen Sie sie ignorieren.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+"
+`;
+
+exports[`renderMagicLinkEmail > renders the plain text fallback (snapshot) 1`] = `
+"Anmelden bei Example App (app.example.com)
+https://app.example.com/login?token=test-token
+
+Wenn Sie diese E-Mail nicht angefordert haben, koennen Sie sie ignorieren."
+`;
