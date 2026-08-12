@@ -226,6 +226,61 @@ export const authClient = createAmadeniAuthClient();
 | `INITIAL_ADMIN_EMAIL`         | Convex deployment | Bootstrap admin while the users table is empty                      |
 | `NEXT_PUBLIC_CONVEX_URL`      | Next.js           | Convex deployment URL (`*.convex.cloud`)                            |
 | `NEXT_PUBLIC_CONVEX_SITE_URL` | Next.js           | Convex HTTP actions URL (`*.convex.site`)                           |
+| `AMADENI_DEV_AUTH_ENABLED`    | Convex deployment | **Dev deployments only** — enables deterministic dev logins         |
+
+## Deterministic dev logins (`createDevAuth`)
+
+> **WARNING:** `AMADENI_DEV_AUTH_ENABLED=true` turns deployment env access
+> into login ability. It must NEVER be set on a production deployment.
+> `assertDevAuthEnabled` additionally refuses production-shaped
+> `CONVEX_DEPLOYMENT` values (`prod`, `prod:*`, `production:*`) even when
+> the flag leaks — but the flag simply has no business existing on prod.
+
+Automated pipelines (visual review, e2e, `@amadeni/dev-contract`) need a
+login without an email round-trip. `createDevAuth` mints a single-use magic
+link token and writes its **hashed** verification row directly into the
+Better Auth component — the regular `/api/auth/magic-link/verify` endpoint
+then completes the sign-in with real sessions and real cookies. No
+auth-config deviation, nothing to clean up.
+
+```ts
+// convex/dev/auth.ts — app wiring (generic factory, injected persistence)
+import { v } from 'convex/values';
+import {
+  createDevAuth,
+  requireDevAuthCliIdentity,
+} from '@amadeni/better-auth-kit';
+import { action, internalMutation } from '../_generated/server';
+import { components, internal } from '../_generated/api';
+
+const devAuth = createDevAuth({
+  createVerification: (ctx, input) =>
+    ctx.runMutation(components.betterAuth.adapter.create, { input }),
+  // Ensure the app user exists and is eligible BEFORE the token is minted,
+  // otherwise the verify-time eligibility hook denies the login.
+  ensureUser: (ctx, { email, name }) =>
+    ctx.runMutation(internal.dev.auth.ensureDevUserInternal, { email, name }),
+  defaultEmail: 'dev@amadeni.local',
+});
+
+export const createDevToken = action({
+  args: { email: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    // CLI-only surface: `convex run --identity '{"issuer": ..., "subject": ...}'`
+    await requireDevAuthCliIdentity(ctx, {
+      issuer: 'my-app-dev-auth',
+      subject: 'dev-auth-cli',
+    });
+    return await devAuth.issueToken(ctx, args); // gate + user + token
+  },
+});
+```
+
+Consume the token via `devAuth.buildVerifyUrl({ token, origin })` — a
+`fetch(url, { redirect: 'manual' })` returns the session cookies
+(`better-auth.session_token`, `better-auth.convex_jwt`) in `Set-Cookie`.
+`@amadeni/dev-contract` packages exactly this flow as a CLI with a
+verified-login readiness gate.
 
 ## Security
 

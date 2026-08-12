@@ -27,6 +27,17 @@ export {
   type MagicLinkLocale,
 } from './emailTemplate.js';
 export {
+  DEV_AUTH_ENV_NAME,
+  DEV_AUTH_TOKEN_TTL_MS,
+  assertDevAuthEnabled,
+  createDevAuth,
+  createDevAuthTokenValue,
+  requireDevAuthCliIdentity,
+  type DevAuthConfig,
+  type DevAuthEnv,
+  type DevAuthVerificationInput,
+} from './devAuth.js';
+export {
   AUTH_ERROR_CODES,
   type AuthErrorCode,
   type AuthErrorCodeValue,
