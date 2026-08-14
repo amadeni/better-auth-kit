@@ -6,7 +6,8 @@ export type AuthServerConfig = {
   /**
    * The Convex HTTP actions URL (`NEXT_PUBLIC_CONVEX_SITE_URL`),
    * `*.convex.site` — NOT the `.convex.cloud` URL and not your app's own
-   * domain.
+   * domain. Loopback hosts (`localhost`, `127.x.x.x`, `[::1]`) are always
+   * accepted for local Convex backends.
    */
   convexSiteUrl: string;
   /**
@@ -16,6 +17,19 @@ export type AuthServerConfig = {
    */
   allowNonConvexSiteUrl?: boolean;
 };
+
+/**
+ * A loopback host (local Convex backend, e.g. the Mynd dev contract's
+ * `http://127.0.0.1:3211`) can never be a misconfigured production
+ * deployment, so it skips the `.convex.site` check.
+ */
+function isLoopbackHostname(hostname: string) {
+  return (
+    hostname === 'localhost' ||
+    hostname === '[::1]' ||
+    /^127(?:\.\d{1,3}){3}$/.test(hostname)
+  );
+}
 
 function parseUrl(value: string, name: string) {
   try {
@@ -45,6 +59,7 @@ export function createAuthServer(
 
   if (
     !config.allowNonConvexSiteUrl &&
+    !isLoopbackHostname(siteUrl.hostname) &&
     !siteUrl.hostname.endsWith('.convex.site')
   ) {
     const hint = siteUrl.hostname.endsWith('.convex.cloud')

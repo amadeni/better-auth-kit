@@ -47,6 +47,26 @@ describe('createAuthServer', () => {
     ).toThrow(/must be a \*\.convex\.site URL/);
   });
 
+  it('allows loopback hosts for local Convex backends by default', () => {
+    for (const url of [
+      'http://127.0.0.1:3211',
+      'http://localhost:3211',
+      'http://[::1]:3211',
+    ]) {
+      const server = createAuthServer({ convexUrl, convexSiteUrl: url });
+      expect(typeof server.handler.GET).toBe('function');
+    }
+  });
+
+  it('does not treat 127-prefixed public hosts as loopback', () => {
+    expect(() =>
+      createAuthServer({
+        convexUrl,
+        convexSiteUrl: 'https://127.example.com',
+      }),
+    ).toThrow(/must be a \*\.convex\.site URL/);
+  });
+
   it('allows custom domains only with the explicit escape hatch', () => {
     const server = createAuthServer({
       convexUrl,
