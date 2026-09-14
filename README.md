@@ -369,4 +369,6 @@ pnpm install
 pnpm run ci    # prettier + eslint + tsc + cspell + vitest
 ```
 
-Releases: `pnpm run release` (patch), `release:minor`, `release:major`.
+Releases happen on main, never by hand: bump the version in the PR
+(`pnpm bump`, `bump:minor`, `bump:major`), and the Release workflow publishes
+it after the rebase merge, then tags `v<version>`.
