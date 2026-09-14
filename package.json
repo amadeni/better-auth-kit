@@ -36,7 +36,6 @@
     "check-spelling": "cspell '**/*.*' --no-progress",
     "test": "vitest run",
     "ci": "pnpm run prettier:check && pnpm run lint && pnpm run ts && pnpm run check-spelling && pnpm run test",
-    "re-release": "git tag -d v$(node -p \"require('./package.json').version\") && git push origin :refs/tags/v$(node -p \"require('./package.json').version\") && git tag v$(node -p \"require('./package.json').version\") && git push --tags",
     "bump": "pnpm version patch --no-git-tag-version",
     "bump:minor": "pnpm version minor --no-git-tag-version",
     "bump:major": "pnpm version major --no-git-tag-version"
